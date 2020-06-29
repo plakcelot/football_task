@@ -17,6 +17,14 @@ function getTeam(id) {
     return request(`http://api.football-data.org/v2/teams/${id}`);
 }
 
+function toggleDisplay(component, isVisible) {
+    if (isVisible) {
+        component.style.display = "block";
+    } else {
+        component.style.display = "none";
+    }
+}
+
 function insertHeader(data) {
     function getMonth(date) {
         let months = ['January', 'February', 'March', 'April', 'May', 'Juny', 'July',
@@ -76,13 +84,15 @@ function createTable(data) {
     const countTeams = data.standings[0].table.length;
 
     for (let i = 0; i < countTeams; i++) {
-        readyTable += '<tr data-id="' + data.standings[0].table[i].team.id + '"><td>' + data.standings[0].table[i].position +
-            '</td><td>' + data.standings[0].table[i].team.name +
-            '</td><td>' + data.standings[0].table[i].playedGames +
-            '</td><td>' + data.standings[0].table[i].won +
-            '</td><td>' + data.standings[0].table[i].draw +
-            '</td><td>' + data.standings[0].table[i].lost +
-            '</td><td>' + data.standings[0].table[i].points +
+        const {team: {id, name}, position, playedGames, won, draw, lost, points} = data.standings[0].table[i];
+
+        readyTable += '<tr data-id="' + id + '"><td>' + position +
+            '</td><td>' + name +
+            '</td><td>' + playedGames +
+            '</td><td>' + won +
+            '</td><td>' + draw +
+            '</td><td>' + lost +
+            '</td><td>' + points +
             '</td></tr>';
     }
 
@@ -114,24 +124,25 @@ request(url)
                         .then(
                             (team) => {
                                 const phone = (team.phone !== null) ? team.phone : "Not specified";
+                                const {area: {name: areaName}, crestUrl, name: teamName, clubColors, address, website} = team;
 
-                                overlay.style.display = 'block';
-                                modal.style.display = 'block';
+                                toggleDisplay(overlay, true);
+                                toggleDisplay(modal, true);
 
-                                modalContent.innerHTML = '<img class="logo" src="' + team.crestUrl +
-                                    '"><h3>' + team.name + '</h3>' +
+                                modalContent.innerHTML = '<img class="logo" src="' + crestUrl +
+                                    '"><h3>' + teamName + '</h3>' +
                                     '<p class="close">Close</p>' +
-                                    '<p><span>Country: </span>' + team.area.name + '</p>' +
-                                    '<p><span>Club colors: </span>' + team.clubColors + '</p>' +
-                                    '<p><span>Address: </span>' + team.address + '</p>' +
+                                    '<p><span>Country: </span>' + areaName + '</p>' +
+                                    '<p><span>Club colors: </span>' + clubColors + '</p>' +
+                                    '<p><span>Address: </span>' + address + '</p>' +
                                     '<p><span>Phone: </span>' + phone + '</p>' +
-                                    '<p><span>Site: </span><a href="' + team.website + '" target="_blank">'
-                                     + team.website + '</a></p></div>';
+                                    '<p><span>Site: </span><a href="' + website + '" target="_blank">' + website + '</a></p></div>';
 
                                 const close = document.querySelector('.close');
+
                                 close.onclick = function () {
-                                    modal.style.display = 'none';
-                                    overlay.style.display = 'none';
+                                    toggleDisplay(overlay, false);
+                                    toggleDisplay(modal, false);
                                 }
                             }
                         )
