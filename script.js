@@ -25,6 +25,12 @@ function toggleDisplay(component, isVisible) {
     }
 }
 
+function appendElementWithContent(parent, element, content = "") {
+    let component = document.createElement(element);
+    component.innerHTML = content;
+    return parent.appendChild(component);
+}
+
 function insertHeader(data) {
     function getMonth(date) {
         let months = ['January', 'February', 'March', 'April', 'May', 'Juny', 'July',
@@ -64,42 +70,85 @@ function insertHeader(data) {
 }
 
 function createTable(data) {
-    let table = document.querySelector('.table');
-    let readyTable = `
-    <table>
-    <thead>
-        <tr>
-            <th>Position</th>
-            <th>Club</th>
-            <th>Played games</th>
-            <th>Wins</th>
-            <th>Draws</th>
-            <th>Losses</th>
-            <th>Points</th>
-         </tr>
-    </thead>
-    <tbody>
-    `;
+    let tableArea = document.querySelector('.table');
+    let table = document.createElement('table');
+    let thead = document.createElement('thead');
+    let tbody = document.createElement('tbody');
 
+    let tr = appendElementWithContent(thead, 'tr');
+
+    const content = ['Position', 'Club', 'Played games', 'Wins', 'Draws', 'Losses', 'Points'];
+    const countColumns = content.length;
     const countTeams = data.standings[0].table.length;
 
+    // Append table header
+    for (let i = 0; i < countColumns; i++) {
+        appendElementWithContent(tr, 'td', content[i]);
+    }
+
+    // Append table body
     for (let i = 0; i < countTeams; i++) {
         const {team: {id, name}, position, playedGames, won, draw, lost, points} = data.standings[0].table[i];
 
-        readyTable += '<tr data-id="' + id + '"><td>' + position +
-            '</td><td>' + name +
-            '</td><td>' + playedGames +
-            '</td><td>' + won +
-            '</td><td>' + draw +
-            '</td><td>' + lost +
-            '</td><td>' + points +
-            '</td></tr>';
+        let tr = appendElementWithContent(tbody, 'tr');
+        tr.onclick = function() {
+            showModal(id);
+        };
+
+        appendElementWithContent(tr, 'td', position);
+        appendElementWithContent(tr, 'td', name);
+        appendElementWithContent(tr, 'td', playedGames);
+        appendElementWithContent(tr, 'td', won);
+        appendElementWithContent(tr, 'td', draw);
+        appendElementWithContent(tr, 'td', lost);
+        appendElementWithContent(tr, 'td', points);
     }
 
-    readyTable += '</tbody></table>';
-    table.innerHTML = readyTable;
-    document.body.append(table);
+    table.appendChild(thead);
+    table.appendChild(tbody);
+    tableArea.appendChild(table);
 };
+
+function showModal(teamId) {
+    const modal = document.querySelector('.modal');
+    const modalContent = document.querySelector('.modal-content');
+    const overlay = document.querySelector('.modal-overlay');
+
+    getTeam(teamId)
+        .then(
+            (team) => {
+                modalContent.innerHTML = '';
+
+                const phone = (team.phone !== null) ? team.phone : "Not specified";
+                const { area: {name: areaName}, crestUrl, name: teamName, clubColors, address, website } = team;
+
+                toggleDisplay(overlay, true);
+                toggleDisplay(modal, true);
+
+                let img = appendElementWithContent(modalContent, 'img');
+                img.src = crestUrl;
+                img.classList.add('logo');
+
+                let close = appendElementWithContent(modalContent, 'p', 'Close');
+                close.classList.add('close');
+
+                appendElementWithContent(modalContent, 'h3', teamName);
+                appendElementWithContent(modalContent, 'p', `<span>Country: </span> ${areaName}`);
+                appendElementWithContent(modalContent, 'p', `<span>Club colors: </span> ${clubColors}`);
+                appendElementWithContent(modalContent, 'p', `<span>Adress: </span> ${address}`);
+                appendElementWithContent(modalContent, 'p', `<span>Phone: </span> ${phone}`);
+                appendElementWithContent(modalContent, 'p', `<span>Site: </span><a href="${website}" target="_blank">${website}</a>`);
+
+                const closeButton = document.querySelector('.close');
+
+                closeButton.onclick = function () {
+                    toggleDisplay(overlay, false);
+                    toggleDisplay(modal, false);
+                }
+            }
+        )
+
+    }
 
 const url = 'https://api.football-data.org/v2/competitions/2021/standings?standingType=TOTAL';
 
@@ -109,46 +158,3 @@ request(url)
             insertHeader(result);
             createTable(result);
         })
-    .then(
-        () => {
-            const rows = document.querySelectorAll('tr');
-            const modal = document.querySelector('.modal');
-            const modalContent = document.querySelector('.modal-content');
-            const overlay = document.querySelector('.modal-overlay');
-
-            for (let i = 0; i < rows.length; i++) {
-                rows[i].onclick = function () {
-                    const teamId = this.dataset.id;
-
-                    getTeam(teamId)
-                        .then(
-                            (team) => {
-                                const phone = (team.phone !== null) ? team.phone : "Not specified";
-                                const {area: {name: areaName}, crestUrl, name: teamName, clubColors, address, website} = team;
-
-                                toggleDisplay(overlay, true);
-                                toggleDisplay(modal, true);
-
-                                modalContent.innerHTML = '<img class="logo" src="' + crestUrl +
-                                    '"><h3>' + teamName + '</h3>' +
-                                    '<p class="close">Close</p>' +
-                                    '<p><span>Country: </span>' + areaName + '</p>' +
-                                    '<p><span>Club colors: </span>' + clubColors + '</p>' +
-                                    '<p><span>Address: </span>' + address + '</p>' +
-                                    '<p><span>Phone: </span>' + phone + '</p>' +
-                                    '<p><span>Site: </span><a href="' + website + '" target="_blank">' + website + '</a></p></div>';
-
-                                const close = document.querySelector('.close');
-
-                                close.onclick = function () {
-                                    toggleDisplay(overlay, false);
-                                    toggleDisplay(modal, false);
-                                }
-                            }
-                        )
-                };
-
-
-            }
-        }
-    );
