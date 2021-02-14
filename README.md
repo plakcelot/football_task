@@ -1,3 +1,3 @@
 ### football_task
-task description:
-create the football league table using [API](https://www.football-data.org/)
+Описание задачи:
+Создать таблицу футбольной лиги, используя [API](https://www.football-data.org/) + отображение модального окна с информацией о команде при клике на строку
